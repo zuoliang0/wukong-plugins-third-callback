@@ -19,7 +19,7 @@
 
 ---
 
-## 🎯 核心功能
+## 核心功能
 
 ### 主要能力
 
@@ -71,7 +71,7 @@
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 
@@ -89,7 +89,7 @@ git clone https://github.com/WuKongIM/wukong-plugins-third-callback.git
 cd wukong-plugins-third-callback
 
 # 编译插件
-go build -o plugin.wkp main.go
+./build.sh
 ```
 
 **输出**: `plugin.wkp`（悟空IM插件文件）
@@ -141,7 +141,7 @@ bash build.sh
 
 ---
 
-## 📡 API 规范
+## API 规范
 
 ### 请求规范
 
@@ -167,7 +167,7 @@ POST {CallbackUrl}
 
 ```json
 {
-  "msgBody": "Hello World",
+  "msgBody": "base64(消息json)",
   "fromUid": "user123",
   "channelId": "channel456",
   "channelType": 1,
@@ -179,15 +179,15 @@ POST {CallbackUrl}
 
 **请求体字段说明**：
 
-| 字段 | 类型 | 说明 | 示例 |
-|------|------|------|------|
-| `msgBody` | String | 消息内容（原始文本） | `"Hello World"` |
-| `fromUid` | String | 发送者用户ID | `"user123"` |
-| `channelId` | String | 频道ID（单聊时为对方ID，群聊时为群ID） | `"channel456"` |
-| `channelType` | uint32 | 频道类型 `1=单聊` `2=群聊` | `1` |
-| `deviceId` | String | 发送设备ID | `"device789"` |
-| `deviceFlag` | uint8 | 设备类型 `0=APP` `1=WEB` `2=PC` `99=SYSTEM` | `0` |
-| `deviceLevel` | uint8 | 设备级别 `0=从设备` `1=主设备` | `1` |
+| 字段 | 类型 | 说明                                      | 示例             |
+|------|------|-----------------------------------------|----------------|
+| `msgBody` | String | 消息内容（base64编码的请求体）                      | `"xxxxxx"`     |
+| `fromUid` | String | 发送者用户ID                                 | `"user123"`    |
+| `channelId` | String | 频道ID（单聊时为对方ID，群聊时为群ID）                  | `"channel456"` |
+| `channelType` | uint32 | 频道类型 `1=单聊` `2=群聊`                      | `1`            |
+| `deviceId` | String | 发送设备ID                                  | `"device789"`  |
+| `deviceFlag` | uint8 | 设备类型 `0=APP` `1=WEB` `2=PC` `99=SYSTEM` | `0`            |
+| `deviceLevel` | uint8 | 设备级别 `0=从设备` `1=主设备`                    | `1`            |
 
 ### 响应规范
 
@@ -205,7 +205,7 @@ POST {CallbackUrl}
 ```json
 {
   "allow": true,
-  "msgBody": "Modified Message"
+  "msgBody": "base64(修改后的消息json)"
 }
 ```
 
@@ -244,7 +244,7 @@ POST {CallbackUrl}
 
 ---
 
-## 🔐 签名验证
+## 签名验证
 
 ### 验证原理
 
@@ -314,35 +314,36 @@ function calculateMD5(requestBody) {
 #### Go 示例
 
 ```go
+package main
+
 import (
-    "crypto/md5"
-    "crypto/sha1"
-    "encoding/hex"
-    "encoding/json"
-    "fmt"
-    "net/http"
+	"crypto/md5"
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
+	"net/http"
 )
 
 // VerifySignature 验证请求签名
 func VerifySignature(req *http.Request, appSecret string) bool {
-    checksum := req.Header.Get("CheckSum")
-    md5Val := req.Header.Get("MD5")
-    curTime := req.Header.Get("CurTime")
+	checksum := req.Header.Get("CheckSum")
+	md5Val := req.Header.Get("MD5")
+	curTime := req.Header.Get("CurTime")
 
-    // 重新计算 CheckSum
-    toSign := appSecret + md5Val + curTime
-    sha1Hash := sha1.Sum([]byte(toSign))
-    calculatedChecksum := hex.EncodeToString(sha1Hash[:])
+	// 重新计算 CheckSum
+	toSign := appSecret + md5Val + curTime
+	sha1Hash := sha1.Sum([]byte(toSign))
+	calculatedChecksum := hex.EncodeToString(sha1Hash[:])
 
-    // 比对（忽略大小写）
-    return strings.EqualFold(checksum, calculatedChecksum)
+	// 比对（忽略大小写）
+	return strings.EqualFold(checksum, calculatedChecksum)
 }
 
 // CalculateMD5 计算请求体的MD5
 func CalculateMD5(data interface{}) string {
-    jsonData, _ := json.Marshal(data)
-    hash := md5.Sum(jsonData)
-    return hex.EncodeToString(hash[:])
+	jsonData, _ := json.Marshal(data)
+	hash := md5.Sum(jsonData)
+	return hex.EncodeToString(hash[:])
 }
 ```
 
@@ -356,7 +357,7 @@ func CalculateMD5(data interface{}) string {
 
 ---
 
-## ⚙️ 配置指南
+## 配置指南
 
 ### 配置项详解
 
@@ -476,7 +477,7 @@ func CalculateMD5(data interface{}) string {
 
 ---
 
-## 💡 使用示例
+## 使用示例
 
 ### 场景1：内容安全审核
 
@@ -484,7 +485,7 @@ func CalculateMD5(data interface{}) string {
 
 **第三方应用实现**：
 
-```python
+``` python
 from flask import Flask, request
 import hashlib
 import json
@@ -719,7 +720,7 @@ func main() {
 
 ---
 
-## ❓ 常见问题
+## 常见问题
 
 ### Q1: 消息会丢失吗？
 
@@ -842,7 +843,7 @@ mark_as_processed(message_id)
 
 ---
 
-## 🔧 故障排查
+## 故障排查
 
 ### 问题1: "插件加载失败"
 
@@ -922,17 +923,18 @@ print(f"Expected CheckSum: {expected_checksum}")
 - [悟空IM官方网站](https://wukongim.github.io/)
 - [悟空IM Go Plugin SDK](https://github.com/WuKongIM/go-pdk)
 - [悟空IM协议定义](https://github.com/WuKongIM/WuKongIMGoProto)
+- [插件安装教程](https://githubim.com/server/plugin/use.html)
 
  
 ### 技术支持
-
+- [GitHub Issues](https://github.com/zuoliang0/wukong-plugins-third-callback)
  
 
 ---
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+本项目采用 Apache License 2.0 许可证。详见 [LICENSE](LICENSE) 文件。
 
 ---
 
