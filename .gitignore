@@ -1,0 +1,44 @@
+# Go 编译产物
+*.wkp
+*.so
+*.o
+*.a
+*.dll
+*.exe
+*.dylib
+
+# Go 缓存与依赖
+go.sum
+/vendor/
+
+# IDE 与编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# 构建输出目录
+/build/
+
+# 系统文件
+.env
+.env.local
+*.log
+
+# 临时文件
+*.tmp
+*.bak
+*.backup
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+desktop.ini

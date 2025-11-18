@@ -1,0 +1,314 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-11-18T14:52:07+08:00",
+    "generatedBy": "Claude AI Architect (Adaptive)",
+    "projectName": "wukong-plugins-third-callback",
+    "projectType": "Go Plugin",
+    "language": "Go 1.25"
+  },
+  "summary": {
+    "totalFiles": 5,
+    "scannedFiles": 5,
+    "coverage": 100,
+    "moduleCount": 1,
+    "truncated": false,
+    "scanPhases": {
+      "phaseA": "completed",
+      "phaseB": "completed",
+      "phaseC": "completed"
+    }
+  },
+  "modules": [
+    {
+      "name": "root",
+      "path": ".",
+      "type": "go-plugin",
+      "description": "悟空IM第三方消息回调插件",
+      "language": "Go",
+      "version": "0.0.1",
+      "pluginId": "wk.plugin.third.msg.callback",
+      "entryPoints": [
+        "main.go"
+      ],
+      "interfaces": {
+        "hooks": [
+          {
+            "name": "Send",
+            "trigger": "消息发送前",
+            "status": "partial_implemented",
+            "file": "main.go",
+            "line": 63
+          }
+        ],
+        "httpCallback": {
+          "method": "POST",
+          "targetUrl": "Config.CallbackUrl",
+          "authentication": "SHA1(AppSecret + MD5 + CurTime)",
+          "documented": true
+        }
+      },
+      "dependencies": {
+        "direct": [
+          "github.com/WuKongIM/go-pdk@v1.0.3",
+          "github.com/WuKongIM/wklog@v0.0.0-20250123094253-32484fb54d05",
+          "go.uber.org/zap@v1.27.0"
+        ],
+        "indirect": [
+          "github.com/WuKongIM/WuKongIMGoProto@v1.0.21",
+          "github.com/WuKongIM/wkrpc@v0.0.0-20250312122115-5e44de72d2c8"
+        ]
+      },
+      "configuration": {
+        "file": "embedded",
+        "type": "struct",
+        "fields": [
+          {
+            "name": "CallbackUrl",
+            "type": "string",
+            "label": "第三方接口URL",
+            "default": "http://localhost:6379"
+          },
+          {
+            "name": "AppSecret",
+            "type": "string",
+            "label": "签名密钥",
+            "default": "1234"
+          },
+          {
+            "name": "Timeout",
+            "type": "int",
+            "label": "请求超时时间(秒)",
+            "default": 5
+          },
+          {
+            "name": "TimeoutSend",
+            "type": "bool",
+            "label": "超时后是否允许发送",
+            "default": false
+          },
+          {
+            "name": "Retries",
+            "type": "int",
+            "label": "重试次数",
+            "default": 3
+          }
+        ]
+      },
+      "dataModels": [
+        {
+          "name": "Config",
+          "type": "struct",
+          "file": "main.go",
+          "line": 19,
+          "purpose": "插件配置"
+        },
+        {
+          "name": "ThirdMsgCallback",
+          "type": "struct",
+          "file": "main.go",
+          "line": 28,
+          "purpose": "插件主体"
+        },
+        {
+          "name": "ThirdMsgCallbackReq",
+          "type": "struct",
+          "file": "main.go",
+          "line": 49,
+          "purpose": "回调请求"
+        },
+        {
+          "name": "ThirdMsgCallbackResp",
+          "type": "struct",
+          "file": "main.go",
+          "line": 58,
+          "purpose": "回调响应"
+        }
+      ],
+      "testing": {
+        "hasTests": false,
+        "testFiles": [],
+        "coverage": 0,
+        "frameworks": []
+      },
+      "quality": {
+        "linters": [],
+        "formatting": "gofmt (assumed)",
+        "hasCI": false
+      },
+      "buildSystem": {
+        "tool": "go build",
+        "script": "build.sh",
+        "platforms": [
+          "linux/arm64",
+          "linux/amd64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "outputDir": "build/",
+        "outputPattern": "wk.plugin.third.msg.callback-{GOOS}-{GOARCH}.wkp"
+      },
+      "files": [
+        {
+          "path": "main.go",
+          "type": "source",
+          "lines": 82,
+          "scanned": true,
+          "signals": [
+            "plugin_entry",
+            "hook_implementation",
+            "config_struct",
+            "incomplete_logic"
+          ]
+        },
+        {
+          "path": "go.mod",
+          "type": "dependency",
+          "lines": 27,
+          "scanned": true,
+          "signals": [
+            "module_definition",
+            "go_1.25"
+          ]
+        },
+        {
+          "path": "go.sum",
+          "type": "dependency_lock",
+          "scanned": false,
+          "reason": "checksum_file"
+        },
+        {
+          "path": "build.sh",
+          "type": "script",
+          "lines": 36,
+          "scanned": true,
+          "signals": [
+            "multi_platform_build",
+            "bash_script"
+          ]
+        },
+        {
+          "path": "readme.md",
+          "type": "documentation",
+          "lines": 61,
+          "scanned": true,
+          "signals": [
+            "api_specification",
+            "signature_algorithm",
+            "request_response_format"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "type": "implementation",
+          "severity": "high",
+          "description": "Send() 方法核心逻辑未实现",
+          "location": "main.go:63-81",
+          "recommendation": "实现签名生成、HTTP调用、重试机制"
+        },
+        {
+          "type": "testing",
+          "severity": "high",
+          "description": "缺少单元测试和集成测试",
+          "recommendation": "创建 main_test.go 覆盖核心场景"
+        },
+        {
+          "type": "error_handling",
+          "severity": "medium",
+          "description": "错误处理不完善",
+          "recommendation": "区分错误类型，添加详细日志"
+        }
+      ],
+      "coverage": {
+        "total": 100,
+        "byCategory": {
+          "entryPoints": 100,
+          "interfaces": 100,
+          "dependencies": 100,
+          "configuration": 100,
+          "dataModels": 100,
+          "testing": 0,
+          "quality": 0
+        }
+      }
+    }
+  ],
+  "ignoreRules": {
+    "source": "default",
+    "patterns": [
+      "node_modules/**",
+      ".git/**",
+      ".github/**",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      "__pycache__/**",
+      "*.lock",
+      "*.log",
+      "*.bin",
+      "*.pdf",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.mp4",
+      "*.zip",
+      "*.tar",
+      "*.gz"
+    ],
+    "note": ".gitignore not found, using default rules"
+  },
+  "ignoredStats": {
+    "totalIgnored": 0,
+    "byPattern": {},
+    "topDirectories": []
+  },
+  "nextSteps": {
+    "priority": "high",
+    "recommendations": [
+      {
+        "action": "implement_core_logic",
+        "target": "main.go:Send()",
+        "description": "完成消息回调核心逻辑：签名生成、HTTP调用、重试机制",
+        "estimatedEffort": "medium"
+      },
+      {
+        "action": "add_tests",
+        "target": "main_test.go",
+        "description": "创建单元测试覆盖签名、重试、超时等场景",
+        "estimatedEffort": "medium"
+      },
+      {
+        "action": "enhance_error_handling",
+        "target": "main.go",
+        "description": "完善错误处理，区分网络错误、超时错误、业务错误",
+        "estimatedEffort": "low"
+      },
+      {
+        "action": "add_ci_cd",
+        "target": ".github/workflows/",
+        "description": "添加 GitHub Actions 实现自动化测试与构建",
+        "estimatedEffort": "low"
+      }
+    ],
+    "missingDirs": [],
+    "partialScanDirs": []
+  },
+  "scanReport": {
+    "startTime": "2025-11-18T14:52:07+08:00",
+    "endTime": "2025-11-18T14:52:07+08:00",
+    "duration": "< 1s",
+    "filesProcessed": 5,
+    "filesSkipped": 0,
+    "errors": [],
+    "warnings": [
+      {
+        "type": "incomplete_implementation",
+        "message": "main.go:Send() 方法包含待实现的TODO注释",
+        "file": "main.go",
+        "line": 80
+      }
+    ]
+  }
+}
