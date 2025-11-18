@@ -89,7 +89,7 @@ git clone https://github.com/WuKongIM/wukong-plugins-third-callback.git
 cd wukong-plugins-third-callback
 
 # 编译插件
-./build.sh
+go build -o plugin.wkp main.go
 ```
 
 **输出**: `plugin.wkp`（悟空IM插件文件）
@@ -255,62 +255,6 @@ POST {CallbackUrl}
 
 ### 验证算法
 
-#### Python 示例
-
-```python
-import hashlib
-import json
-from time import time
-
-def verify_signature(request_headers, app_secret):
-    """验证签名"""
-
-    # 从请求头获取参数
-    checksum = request_headers.get('CheckSum')
-    md5 = request_headers.get('MD5')
-    cur_time = request_headers.get('CurTime')
-
-    # 重新计算 CheckSum
-    # CheckSum = SHA1(AppSecret + MD5 + CurTime)
-    to_sign = app_secret + md5 + str(cur_time)
-    calculated_checksum = hashlib.sha1(to_sign.encode()).hexdigest()
-
-    # 比对
-    return checksum.lower() == calculated_checksum.lower()
-
-def calculate_md5(request_body):
-    """计算请求体的MD5"""
-    return hashlib.md5(request_body.encode()).hexdigest()
-```
-
-#### Node.js 示例
-
-```javascript
-const crypto = require('crypto');
-
-function verifySignature(requestHeaders, appSecret) {
-  const checksum = requestHeaders['checksum'];
-  const md5 = requestHeaders['md5'];
-  const curTime = requestHeaders['curtime'];
-
-  // 重新计算 CheckSum
-  const toSign = appSecret + md5 + curTime;
-  const calculatedChecksum = crypto
-    .createHash('sha1')
-    .update(toSign)
-    .digest('hex');
-
-  return checksum.toLowerCase() === calculatedChecksum.toLowerCase();
-}
-
-function calculateMD5(requestBody) {
-  return crypto
-    .createHash('md5')
-    .update(JSON.stringify(requestBody))
-    .digest('hex');
-}
-```
-
 #### Go 示例
 
 ```go
@@ -381,7 +325,7 @@ func (t *WukongController) WukongMsgCallBack(c *gin.Context) {
 
 - [ ] 检查 `CheckSum` 是否为小写十六进制格式
 - [ ] 确认 `AppSecret` 与插件配置完全一致
-- [ ] 验证 `MD5` 是否基于完整的bodyJSON计算
+- [ ] 验证 `MD5` 是否基于body-JSON计算
 - [ ] 检查时间差（CurTime应为当前时间，差异不应超过5秒）
 - [ ] 确保字符编码为 UTF-8
 
