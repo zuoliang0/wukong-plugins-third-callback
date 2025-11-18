@@ -319,8 +319,8 @@ package main
 import (
 	"crypto/md5"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"net/http"
 )
 
@@ -340,10 +340,40 @@ func VerifySignature(req *http.Request, appSecret string) bool {
 }
 
 // CalculateMD5 计算请求体的MD5
-func CalculateMD5(data interface{}) string {
-	jsonData, _ := json.Marshal(data)
-	hash := md5.Sum(jsonData)
+func CalculateMD5(data string) string {
+	decodeBase64, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return ""
+	}
+	hash := md5.Sum(decodeBase64)
 	return hex.EncodeToString(hash[:])
+}
+//假设你的请求函数
+
+func (t *WukongController) WukongMsgCallBack(c *gin.Context) {
+	s := VerifySignature(c, t.config.Wukong.CallbackKey)
+	if !s {
+		c.String(http.StatusForbidden, "forbidden")
+		return
+	}
+	var req ginmodel.ThirdMsgCallbackReq
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	md5Client := c.GetHeader("MD5")
+	md5Server := CalculateMD5(req.MsgBody)
+	if md5Client != md5Server {
+		c.String(http.StatusBadRequest, "md5 mismatch")
+		return
+	}
+	//真实的处理器
+	allow, modifiedMsgBody := t.dao.WukongMsgCallBack(&req)
+	resp := ginmodel.ThirdMsgCallbackResp{
+		Allow:   allow,
+		MsgBody: modifiedMsgBody,
+	}
+	c.JSON(http.StatusOK, resp)
 }
 ```
 
@@ -351,7 +381,7 @@ func CalculateMD5(data interface{}) string {
 
 - [ ] 检查 `CheckSum` 是否为小写十六进制格式
 - [ ] 确认 `AppSecret` 与插件配置完全一致
-- [ ] 验证 `MD5` 是否基于完整的请求体JSON计算
+- [ ] 验证 `MD5` 是否基于完整的bodyJSON计算
 - [ ] 检查时间差（CurTime应为当前时间，差异不应超过5秒）
 - [ ] 确保字符编码为 UTF-8
 

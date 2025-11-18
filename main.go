@@ -31,11 +31,11 @@ var Version = "0.0.1"                         // 插件版本
 var Priority = int32(1)                       // 插件优先级
 // 定义插件的配置结构体
 type Config struct {
-	CallbackUrl         string `json:"name" label:"第三方接口URL"`              // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	AppSecret           string `json:"app_secret" label:"签名密钥"`             // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	Timeout             int    `json:"timeout" label:"请求超时时间(秒)"`        // json为配置项名称，label为WuKongIM后台显示的配置项名称
+	CallbackUrl         string `json:"name" label:"第三方接口URL"`          // json为配置项名称，label为WuKongIM后台显示的配置项名称
+	AppSecret           string `json:"app_secret" label:"签名密钥"`        // json为配置项名称，label为WuKongIM后台显示的配置项名称
+	Timeout             int    `json:"timeout" label:"请求超时时间(秒)"`      // json为配置项名称，label为WuKongIM后台显示的配置项名称
 	TimeoutSend         bool   `json:"timeout_send" label:"超时后是否允许发送"` // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	Retries             int    `json:"retries" label:"重试次数"`                // json为配置项名称，label为WuKongIM后台显示的配置项名称
+	Retries             int    `json:"retries" label:"重试次数"`           // json为配置项名称，label为WuKongIM后台显示的配置项名称
 	CircuitBreakerLimit int    `json:"circuit_breaker_limit" label:"熔断阈值(连续失败次数)"`
 	CircuitBreakerReset int    `json:"circuit_breaker_reset" label:"熔断重置时间(秒)"`
 }
@@ -75,7 +75,7 @@ func New() interface{} {
 
 	return &ThirdMsgCallback{
 		// 初始化日志
-		Log: wklog.NewWKLog("robot"),
+		Log: wklog.NewWKLog("third-msg-callback"),
 		Config: Config{
 			CallbackUrl:         "http://localhost:1234", // 默认URL
 			AppSecret:           "1234",                  // 默认密钥
