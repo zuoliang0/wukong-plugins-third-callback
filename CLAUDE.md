@@ -513,9 +513,9 @@ build/
 
 ## 联系与反馈
 
-**项目维护**: 悟空IM团队
-**插件作者**: （待补充）
-**问题反馈**: （待补充 GitHub Issues 链接）
+**项目维护**: 左良
+**插件作者**: 左良
+**问题反馈**: https://github.com/zuoliang0/wukong-plugins-third-callback
 
 ---
 
