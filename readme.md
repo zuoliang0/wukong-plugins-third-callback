@@ -800,7 +800,7 @@ mark_as_processed(message_id)
 
 1. **查看悟空IM日志**：
    ```bash
-   tail -f /path/to/wukongim.log | grep "third.msg.callback"
+   tail -f /path/to/wukongim/wukongim_data/plugins/plugindata/wk.plugin.third.msg.callback/logs/info.log
    ```
 
 2. **监控第三方应用日志**：记录所有回调请求和响应
@@ -826,11 +826,14 @@ mark_as_processed(message_id)
 
 **可能原因**：
 - [ ] 插件文件损坏或平台不匹配
+- [ ] 没有执行权限
 - [ ] 悟空IM版本不兼容
 - [ ] 权限不足
 
 **解决方案**：
 ```bash
+# 添加执行权限
+chmod +x plugin.wkp
 # 检查插件完整性
 file plugin.wkp
 
@@ -839,7 +842,7 @@ go clean -cache
 go build -o plugin.wkp main.go
 
 # 查看详细日志
-tail -f wukongim.log | grep -i error
+tail -f wukongim/wukongim_data/plugins/plugindata/wk.plugin.third.msg.callback/logs | grep -i error
 ```
 
 ### 问题2: "请求超时"
