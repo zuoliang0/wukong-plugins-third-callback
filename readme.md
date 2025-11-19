@@ -4,7 +4,8 @@
 ![Language](https://img.shields.io/badge/language-Go%201.25-brightgreen)
 ![Plugin](https://img.shields.io/badge/plugin-wk.plugin.third.msg.callback-orange)
 
-> 为悟空IM提供第三方消息拦截与回调能力，在消息发送前将消息内容推送到外部系统进行审核、修改或拦截。
+> 为悟空IM提供第三方消息拦截与回调能力，在消息发送前将消息内容推送到外部系统进行审核、修改或拦截。每条消息同步回调，支持签名验证、超时控制和自动重试，确保消息处理的安全性与可靠性。
+> 如果是需要异步回调可以直接使用产品的Webhook功能，本插件是为需要同步回调场景设计。
 
 ## 📋 目录
 
