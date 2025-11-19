@@ -29,13 +29,13 @@ import (
 var PluginNo = "wk.plugin.third.msg.callback" // 插件编号
 var Version = "0.0.1"                         // 插件版本
 var Priority = int32(1)                       // 插件优先级
-// 定义插件的配置结构体
+// Config 定义插件的配置结构体
 type Config struct {
-	CallbackUrl         string `json:"name" label:"第三方接口URL"`          // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	AppSecret           string `json:"app_secret" label:"签名密钥"`        // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	Timeout             int    `json:"timeout" label:"请求超时时间(秒)"`      // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	TimeoutSend         bool   `json:"timeout_send" label:"超时后是否允许发送"` // json为配置项名称，label为WuKongIM后台显示的配置项名称
-	Retries             int    `json:"retries" label:"重试次数"`           // json为配置项名称，label为WuKongIM后台显示的配置项名称
+	CallbackUrl         string `json:"name" label:"第三方接口URL"`          // http开头
+	AppSecret           string `json:"app_secret" label:"签名密钥"`        // 任意值
+	Timeout             int    `json:"timeout" label:"请求超时时间(秒)"`      // 正整数
+	TimeoutSend         uint8  `json:"timeout_send" label:"超时后是否允许发送"` // 0不允许 1允许
+	Retries             int    `json:"retries" label:"重试次数(最大32)"`     //  重试次数
 	CircuitBreakerLimit int    `json:"circuit_breaker_limit" label:"熔断阈值(连续失败次数)"`
 	CircuitBreakerReset int    `json:"circuit_breaker_reset" label:"熔断重置时间(秒)"`
 }
@@ -80,7 +80,7 @@ func New() interface{} {
 			CallbackUrl:         "http://localhost:1234", // 默认URL
 			AppSecret:           "1234",                  // 默认密钥
 			Timeout:             5,                       // 默认请求超时时间5秒
-			TimeoutSend:         false,                   // 默认超时后不允许发送
+			TimeoutSend:         0,                       // 默认超时后不允许发送
 			Retries:             3,                       // 默认重试3次
 			CircuitBreakerLimit: 10,                      // 默认熔断阈值：连续失败10次
 			CircuitBreakerReset: 60,                      // 默认熔断重置时间：60秒
@@ -88,6 +88,37 @@ func New() interface{} {
 		httpClient:      httpClient,
 		lastFailureTime: time.Now(),
 	}
+}
+
+// ConfigUpdate is called when the config is updated
+func (r *ThirdMsgCallback) ConfigUpdate() {
+	r.Info("Config updated, 重新配置消息超时时间...")
+	r.httpMutex.Lock()
+	defer r.httpMutex.Unlock()
+	if r.Config.Timeout <= 0 {
+		r.Config.Timeout = 5
+	}
+
+	// 创建Redis客户端
+	if r.httpClient != nil {
+		r.httpClient.CloseIdleConnections()
+	}
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   time.Duration(r.Config.Timeout-1) * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+		Timeout:   time.Duration(r.Config.Timeout) * time.Second, // 单位秒, // 单位秒
+	}
+	r.httpClient = httpClient
+
 }
 
 type ThirdMsgCallbackReq struct {
@@ -136,7 +167,7 @@ func (r *ThirdMsgCallback) Send(c *pdk.Context) {
 	if err != nil {
 		r.Error("Failed to call third-party API", zap.Error(err))
 		// 根据 TimeoutSend 配置决定是否允许发送
-		if r.Config.TimeoutSend {
+		if r.Config.TimeoutSend == 1 {
 			c.SendPacket.Reason = uint32(wkproto.ReasonSuccess)
 		} else {
 			c.SendPacket.Reason = uint32(wkproto.ReasonNotAllowSend)
@@ -257,6 +288,7 @@ func (r *ThirdMsgCallback) callThirdParty(req ThirdMsgCallbackReq) (*ThirdMsgCal
 
 	// 计算签名
 	curTime := time.Now().UnixMilli()
+	//注意这里的md5是对消息体进行md5计算，不是对整个请求体进行md5计算
 	md5Hash := md5.Sum([]byte(req.MsgBody))
 	md5Str := hex.EncodeToString(md5Hash[:])
 	checkSum := r.generateCheckSum(md5Str, curTime)
@@ -320,10 +352,7 @@ func (r *ThirdMsgCallback) doRequest(reqBodyBytes []byte, md5Str string, curTime
 	httpReq = httpReq.WithContext(ctx)
 
 	// 使用全局 HTTP 客户端发送请求（自动复用连接）
-	r.httpMutex.Lock()
 	httpResp, err := r.httpClient.Do(httpReq)
-	r.httpMutex.Unlock()
-
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
