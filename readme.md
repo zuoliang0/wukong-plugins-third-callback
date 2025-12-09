@@ -212,10 +212,12 @@ POST {CallbackUrl}
 
 **响应体字段说明**：
 
-| 字段 | 类型 | 必需 | 说明 |
-|------|------|------|------|
-| `allow` | Boolean | ✓ | 是否允许消息发送 |
-| `msgBody` | String | ✗ | 修改后的消息内容（Base64编码，仅当allow=true且需要修改时） |
+| 字段 | 类型 | 必需 | 说明 | 版本要求 |
+|------|------|------|------|---------|
+| `allow` | Boolean | ✓ | 是否允许消息发送 | - |
+| `msgBody` | String | ✗ | 修改后的消息内容（Base64编码，仅当allow=true且需要修改时） | - |
+| `reasonCode` | Integer | ✗ | 自定义拒绝原因码（0-999），仅当allow=false时有效 | >= 2.2.0 |
+| `connectionId` | String | ✗ | 连接标识符，用于日志追踪和问题诊断 | >= 2.2.0 |
 
 #### 响应示例
 
@@ -241,7 +243,28 @@ POST {CallbackUrl}
 }
 ```
 
-> **Note**: `msgBody` 字段需采用 Base64 编码。如果不需要修改消息，可以省略该字段。
+**示例4：拒绝发送（带原因码，2.2.0+）**
+```json
+{
+  "allow": false,
+  "reasonCode": 101,
+  "connectionId": "conn-5f3b8a2c"
+}
+```
+
+**示例5：拒绝发送（完整信息，2.2.0+）**
+```json
+{
+  "allow": false,
+  "reasonCode": 102,
+  "connectionId": "conn-5f3b8a2c"
+}
+```
+
+> **Note**:
+> - `msgBody` 字段需采用 Base64 编码。如果不需要修改消息，可以省略该字段。
+> - `reasonCode` 和 `connectionId` 字段仅在悟空IM版本 >= 2.2.0 时支持，低版本服务器会忽略这些字段。
+> - `connectionId` 建议采用 `conn-` 前缀加唯一标识符的格式，便于日志追踪。
 
 ---
 
@@ -817,6 +840,137 @@ mark_as_processed(message_id)
      -H "Content-Type: application/json" \
      -d '{"content":"test","to":"testuser"}'
    ```
+
+### Q8: 消息被拦截但客户端仍显示发送成功，如何解决？
+
+**A**: 这是因为悟空IM服务端版本过低，不支持插件返回的自定义拒绝原因码。请按以下步骤解决：
+
+**1. 检查悟空IM服务端版本**
+
+```bash
+# 查看悟空IM版本信息
+curl http://localhost:5200/api/system/info | grep version
+
+# 或查看版本文件
+cat /path/to/wukongim/VERSION
+```
+
+**要求版本**: >= 2.2.0
+
+**2. 版本对比**
+
+| 悟空IM版本 | 支持情况 | 说明 |
+|-----------|---------|------|
+| < 2.2.0 | ❌ 不支持 | 客户端无法识别拒绝原因，消息显示发送成功 |
+| >= 2.2.0 | ✅ 完全支持 | 支持 `reasonCode` 和 `connectionId` 字段 |
+
+**3. 升级到 2.2.0+ 版本**
+
+```bash
+# 停止悟空IM服务
+systemctl stop wukongim
+
+# 备份数据
+cp -r /path/to/wukongim /path/to/wukongim.backup
+
+# 下载新版本（从官方仓库获取）
+# https://github.com/WuKongIM/WuKongIM/releases
+
+# 升级安装
+tar -xzf wukongim-2.2.0.tar.gz -C /path/to/wukongim
+
+# 启动服务
+systemctl start wukongim
+
+# 验证版本
+curl http://localhost:5200/api/system/info
+```
+
+**4. 增强的拒绝响应格式（2.2.0+）**
+
+升级后，第三方应用可以返回更详细的拒绝信息：
+
+```json
+{
+  "allow": false,
+  "reasonCode": 100,           // 自定义拒绝原因码（新增）
+  "connectionId": "conn-123"   // 连接标识，用于追踪（新增）
+}
+```
+
+**参数说明**：
+
+| 字段 | 类型 | 说明 | 备注 |
+|------|------|------|------|
+| `allow` | Boolean | 是否允许发送 | 必需 |
+| `reasonCode` | Integer | 拒绝原因码 | 可选，2.2.0+ 支持，0-999之间的整数 |
+| `connectionId` | String | 连接标识符 | 可选，2.2.0+ 支持，用于日志关联 |
+
+**常见的拒绝原因码建议**：
+
+```go
+const (
+    ReasonCodeBlockedByPolicy      = 100  // 被安全策略拦截
+    ReasonCodeSensitiveContent     = 101  // 包含敏感内容
+    ReasonCodeSpamDetected         = 102  // 检测到垃圾消息
+    ReasonCodeUserBanned           = 103  // 用户已被禁言
+    ReasonCodeRateLimitExceeded    = 104  // 超过速率限制
+    ReasonCodeInvalidContent       = 105  // 无效的消息内容
+    ReasonCodeThirdPartyRejected   = 106  // 第三方服务拒绝
+)
+```
+
+**5. 第三方应用实现示例**
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+)
+
+type ThirdMsgCallbackResp struct {
+    Allow          bool    `json:"allow"`
+    ReasonCode     *uint32 `json:"reasonCode,omitempty"`     // 拒绝原因码（2.2.0+）
+    ConnectionId   *string `json:"connectionId,omitempty"`   // 连接标识（2.2.0+）
+    MsgBody        *string `json:"msgBody,omitempty"`        // 修改后的消息内容
+}
+
+func handleCallback(w http.ResponseWriter, r *http.Request) {
+    // ... 验证签名和解析请求 ...
+
+    // 拒绝消息，并返回原因码
+    reasonCode := uint32(101)  // 包含敏感内容
+    connectionId := r.Header.Get("X-Connection-Id")
+
+    resp := ThirdMsgCallbackResp{
+        Allow:        false,
+        ReasonCode:   &reasonCode,
+        ConnectionId: &connectionId,
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(resp)
+}
+```
+
+**6. 客户端验证**
+
+升级到 2.2.0+ 后，客户端将能够识别拒绝的消息：
+
+- ✅ 消息状态显示为"被拒绝"而非"已发送"
+- ✅ 可根据 `reasonCode` 显示对应的错误提示
+- ✅ 日志中包含 `connectionId` 便于追踪问题
+
+**7. 故障排查清单**
+
+- [ ] 确认悟空IM版本 >= 2.2.0
+- [ ] 查看服务升级日志，确认无错误
+- [ ] 重启插件和悟空IM服务
+- [ ] 重新上传编译的插件文件
+- [ ] 发送测试消息验证功能
+- [ ] 检查客户端日志，确认收到拒绝状态
 
 ---
 
