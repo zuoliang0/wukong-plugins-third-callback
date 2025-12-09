@@ -31,11 +31,11 @@ var Version = "0.0.1"                         // 插件版本
 var Priority = int32(1)                       // 插件优先级
 // Config 定义插件的配置结构体
 type Config struct {
-	CallbackUrl         string `json:"name" label:"第三方接口URL"`          // http开头
-	AppSecret           string `json:"app_secret" label:"签名密钥"`        // 任意值
-	Timeout             int    `json:"timeout" label:"请求超时时间(秒)"`      // 正整数
+	CallbackUrl         string `json:"name" label:"第三方接口URL"`              // http开头
+	AppSecret           string `json:"app_secret" label:"签名密钥"`             // 任意值
+	Timeout             int    `json:"timeout" label:"请求超时时间(秒)"`        // 正整数
 	TimeoutSend         uint8  `json:"timeout_send" label:"超时后是否允许发送"` // 0不允许 1允许
-	Retries             int    `json:"retries" label:"重试次数(最大32)"`     //  重试次数
+	Retries             int    `json:"retries" label:"重试次数(最大32)"`        //  重试次数
 	CircuitBreakerLimit int    `json:"circuit_breaker_limit" label:"熔断阈值(连续失败次数)"`
 	CircuitBreakerReset int    `json:"circuit_breaker_reset" label:"熔断重置时间(秒)"`
 }
@@ -132,8 +132,9 @@ type ThirdMsgCallbackReq struct {
 	UUID        string             `json:"uuid"`        //消息唯一标识 仅用于日志跟踪
 }
 type ThirdMsgCallbackResp struct {
-	Allow   bool    `json:"allow"`
-	MsgBody *string `json:"msgBody,omitempty"` //非必传，允许修改消息内容base64格式
+	Allow          bool    `json:"allow"`
+	MsgBody        *string `json:"msgBody,omitempty"`        //非必传，允许修改消息内容base64格式
+	NotAllowReason *uint32 `json:"notAllowReason,omitempty"` //非必传，拒绝原因码
 }
 
 func (r *ThirdMsgCallback) Send(c *pdk.Context) {
@@ -180,7 +181,11 @@ func (r *ThirdMsgCallback) Send(c *pdk.Context) {
 		c.SendPacket.Reason = uint32(wkproto.ReasonSuccess)
 		r.Info("Message allowed to send", zap.String("fromUid", req.FromUid))
 	} else {
-		c.SendPacket.Reason = uint32(wkproto.ReasonNotAllowSend)
+		if resp.NotAllowReason != nil {
+			c.SendPacket.Reason = *resp.NotAllowReason
+		} else {
+			c.SendPacket.Reason = uint32(wkproto.ReasonNotAllowSend)
+		}
 		r.Info("Message blocked by third-party", zap.String("fromUid", req.FromUid))
 	}
 
